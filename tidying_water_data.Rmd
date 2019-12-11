@@ -1,0 +1,136 @@
+---
+title: "Water in Mexico City"
+author: "Mitsue Guerrero"
+date: "12/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(mxmaps)
+library(leaflet)
+library(fs)
+library(janitor)
+library(sf)
+library(geojsonio)
+library(mapview)
+library(dplyr)
+library(httr)
+library(sp)
+library(pryr)
+library(ggmap)
+library(tidyverse)
+
+```
+
+```{r}
+#Create raw-data directory
+dir.create("raw-data")
+#Download geojson file
+download.file("https://datos.cdmx.gob.mx/explore/dataset/consumo-agua/download/?format=geojson&timezone=America/New_York", destfile = "raw-data/agua_cdmx.geojson")
+#Read geojson file as st
+agua_cdmx <- st_read("raw-data/agua_cdmx.geojson", stringsAsFactors = FALSE) 
+#Delete the data
+dir_delete("raw-data")
+#Change Factors to dbl
+cols <- c("consumo_total", "consumo_total_mixto", "consumo_prom_dom", "consumo_total_dom", "consumo_prom", "consumo_total_no_dom", "consumo_prom_mixto", "consumo_prom_no_dom")
+agua_cdmx[cols] <- sapply(agua_cdmx[cols], as.numeric)
+
+#Create a new dataframe only with the municipios of CDMX
+cdmx_municipios <- df_mxmunicipio %>% filter(state_abbr == "CDMX")
+
+#Select the original water use data
+clean_agua_cdmx <- as.data.frame(agua_cdmx) %>% 
+  filter(consumo_total != 0) %>%
+  arrange(desc(consumo_total))
+
+#Arrange into readable format
+clean_agua_cdmx <- clean_agua_cdmx[,c("anio","gid", "nomgeo", "alcaldia", "colonia", "bimestre", "consumo_total", "consumo_prom" ,"consumo_total_dom", "consumo_prom_dom", "consumo_total_no_dom", "consumo_prom_no_dom", "consumo_total_mixto", "consumo_prom_mixto", "indice_des", "geo_point_2d", "geometry")]
+
+#Parse data
+clean_agua_cdmx$bimestre <- as.factor(clean_agua_cdmx$bimestre)
+clean_agua_cdmx$indice_des <- as.factor(clean_agua_cdmx$indice_des)
+
+#Unnest the column list with coord and split in two columns
+clean_agua_cdmx_latlng <- clean_agua_cdmx %>%
+  unnest(geo_point_2d) %>%
+  group_by(gid) %>%
+  mutate(col = seq_along(gid)) %>%
+  spread(key=col, value=geo_point_2d)
+
+
+#Change column names into lat and lng
+colnames(clean_agua_cdmx_latlng)[colnames(clean_agua_cdmx_latlng) == '1'] <- 'lat'
+colnames(clean_agua_cdmx_latlng)[colnames(clean_agua_cdmx_latlng) == '2'] <- 'lng'
+
+#Get mean by municipio and bimestre
+clean_agua_cdmx_latlng_municipios <- clean_agua_cdmx_latlng %>%
+  select(-c("geometry")) %>%
+  distinct(colonia, bimestre, consumo_total, .keep_all = TRUE) %>%
+  group_by(nomgeo, bimestre) %>%
+  summarise(mean_consumo_total = mean(consumo_total),
+  mean_consumo_prom = mean(consumo_prom),
+  mean_consumo_total_dom = mean(consumo_total_dom),
+  mean_consumo_prom_dom = mean(consumo_prom_dom),
+  mean_consumo_total_no_dom = mean(consumo_total_no_dom),
+  mean_consumo_prom_no_dom = mean(consumo_prom_no_dom),
+  mean_consumo_total_mixto = mean(consumo_total_mixto),
+  mean_consumo_prom_mixto = mean(consumo_prom_mixto))
+
+#Join with the data from mxmaps library
+joint_clean_agua <- clean_agua_cdmx_latlng_municipios  %>% 
+  inner_join(cdmx_municipios, by = c("nomgeo" = "municipio_name"))
+
+#Save RDS
+saveRDS(joint_clean_agua, file = "Water_Consumption/water_consumption.rds")
+
+#filter by bimester
+joint_clean_agua %>% 
+  filter(bimestre == 1)
+
+#Stablishing what is the value
+joint_clean_agua$value <- joint_clean_agua$mean_consumo_prom
+
+knitr::kable(head(joint_clean_agua[,c("region", "value")]))
+
+
+mxmunicipio_choropleth(joint_clean_agua, num_colors = 9,
+                       zoom = subset(joint_clean_agua, metro_area %in% c("Valle de México"))$region,
+                       title = "Titulo",
+                       legend = "Cubic Meters per bimester") 
+
+#-----
+# Convert the topoJSON to spatial object
+data(mxmunicipio.topoJSON)
+tmpdir <- tempdir()
+# have to use RJSONIO or else the topojson isn't valid
+write(RJSONIO::toJSON(mxmunicipio.topoJSON), file.path(tmpdir, "municipio.topojson"))
+municipios <- topojson_read(file.path(tmpdir, "municipio.topojson"))
+
+municipios$id <- str_mxmunicipio(municipios$id)
+
+joint_clean_agua <- right_join(joint_clean_agua, municipios, by = c("region", "id"))
+
+#-----
+
+
+  
+
+
+```
+
+```{r}
+# Convert the topoJSON to spatial object
+data(mxmunicipio.topoJSON)
+tmpdir <- tempdir()
+# have to use RJSONIO or else the topojson isn't valid
+write(RJSONIO::toJSON(mxmunicipio.topoJSON), file.path(tmpdir, "municipio.topojson"))
+municipios <- topojson_read(file.path(tmpdir, "municipio.topojson"))
+
+# municipio codes in a standard format , maybe not needed...
+municipios$id <- str_mxmunicipio(municipios$id)
+
+#-------
+```
+

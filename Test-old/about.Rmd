@@ -1,0 +1,29 @@
+---
+title: "About"
+author: "Mitsue Guerrero"
+date: "11/20/2019"
+output: html_document
+---
+
+
+# Why Mexico?
+                    
+Mexico City is drawing groundwater at an unsustainable rate and is expected to reach day zero (run out off water) by 2050. Consuming water at a higher rate than it's able to recover is called water stress.With over 20 million citizens and hosting the federal government, water scarcity will pose a national emergency. Mexico City has been focusing efforts in developing resilience strategies to fight water scarcity. One of them has been around rainwater harvesting in communities that are already facing water scarcity.  
+
+
+# The map and data explained:
+                      
+* SACMEX (Mexico City water utility) collects data on water consumption during 2019.
+* The map shows only the 1000 highest consumers at block level.
+* The size of the circle is proportional to their consumption. So the bigger the circle the higher the consumption.
+* The label indicates how many cubic meter did the water meter read.
+
+# Source:
+                      
+[Datos Abiertos Ciudad de Mexico](https://datos.cdmx.gob.mx/explore/dataset/consumo-agua/information/?location=10,19.35762,-99.14463&dataChart=eyJxdWVyaWVzIjpbeyJjaGFydHMiOlt7InR5cGUiOiJiYXIiLCJmdW5jIjoiQ09VTlQiLCJ5QXhpcyI6ImNvbnN1bW8iLCJzY2llbnRpZmljRGlzcGxheSI6dHJ1ZSwiY29sb3IiOiJyYW5nZS1CbHVlcyJ9XSwieEF4aXMiOiJhbGNhbGRpYSIsIm1heHBvaW50cyI6NTAsInNvcnQiOiIiLCJzZXJpZXNCcmVha2Rvd24iOiJpbmRpY2VfZGVzYXJyb2xsbyIsInN0YWNrZWQiOiJub3JtYWwiLCJjb25maWciOnsiZGF0YXNldCI6ImNvbnN1bW8tYWd1YSIsIm9wdGlvbnMiOnt9fX1dLCJ0aW1lc2NhbGUiOiIiLCJkaXNwbGF5TGVnZW5kIjp0cnVlLCJhbGlnbk1vbnRoIjp0cnVlfQ%3D%3D) 
+
+# Created by:
+
+[Mitsue Elisa Guerrero Monsalve](https://mitsuelisa.com)
+
+                      
