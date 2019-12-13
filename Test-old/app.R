@@ -11,6 +11,7 @@ library(markdown)
 library(shiny)
 library(leaflet)
 library(ggmap)
+library(wesanderson)
 library(tidyverse)
 
 
@@ -18,21 +19,24 @@ library(tidyverse)
 agua_cdmx_latlng <- readRDS("agua_cdmx_latlng.rds")
 
 #Create a color palette
-pal <- colorNumeric(
-    palette = colorspace::heat_hcl,
-    domain = agua_cdmx_latlng$consumo_total)
+pal <- colorFactor(
+    palette = c("#85D4E3", "#9C964A", "#FAD77B"), agua_cdmx_latlng$bimestre)
 
 # Define UI for application that draws a histogram
 ui <- navbarPage("Who is causing water stress in Mexico City?",
                  tabPanel("Interactive Map",
                           sidebarLayout(
                               sidebarPanel(
+                                  
+                                  helpText("This map shows the top water consumers (total consumption) of Mexico City. The circle size represents the size of their consumption and the labels that pop up on hover mean the cubic meters they consumed. Move around the map to find out at block level who are the top consumers. The color shows Blue for the 1 bimester, olive for the 2 bimester, and yellow for the third bimester."),
+                                  
+                                  
                                   radioButtons("plotType", "Circle Size",
                                                c("Total Consumed Cubic Meters in 2019"="p")
                                   )
                               ),
                               mainPanel(
-                                  leafletOutput("plot"),
+                                  leafletOutput("plot", width="100%",height="1000px"),
                                   
                                   
                               )
@@ -67,9 +71,9 @@ server <- function(input, output, session) {
             addCircleMarkers(lng = agua_cdmx_latlng$lng, lat = agua_cdmx_latlng$lat,
                              label = agua_cdmx_latlng$consumo_total,
                              weight = 0,
-                             labelOptions = labelOptions(noHide = T),
-                             fillColor = pal(agua_cdmx_latlng$consumo_total),
-                             radius = agua_cdmx_latlng$consumo_total*.001)
+                             labelOptions = labelOptions(noHide = F),
+                             fillColor = pal(agua_cdmx_latlng$bimestre),
+                             radius = agua_cdmx_latlng$consumo_total*.0004)
         
     })
     

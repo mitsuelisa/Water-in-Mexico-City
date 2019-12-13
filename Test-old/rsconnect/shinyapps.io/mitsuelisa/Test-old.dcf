@@ -1,0 +1,12 @@
+name: Test-old
+title: Test-old
+username:
+account: mitsuelisa
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1589841
+bundleId: 2659682
+url: https://mitsuelisa.shinyapps.io/Test-old/
+when: 1576087359.99552
+asMultiple: FALSE
+asStatic: FALSE

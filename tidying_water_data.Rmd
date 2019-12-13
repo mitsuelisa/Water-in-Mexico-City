@@ -24,7 +24,7 @@ library(tidyverse)
 
 ```
 
-```{r}
+```{r With MX Maps}
 #Create raw-data directory
 dir.create("raw-data")
 #Download geojson file
@@ -132,5 +132,74 @@ municipios <- topojson_read(file.path(tmpdir, "municipio.topojson"))
 municipios$id <- str_mxmunicipio(municipios$id)
 
 #-------
+```
+```{r With data directly and leaflet}
+
+#Create raw-data directory
+dir.create("raw-data")
+#Download geojson file
+download.file("https://datos.cdmx.gob.mx/explore/dataset/consumo-agua/download/?format=geojson&timezone=America/New_York", destfile = "raw-data/agua_cdmx.geojson")
+#Read geojson file as st
+agua_cdmx <- st_read("raw-data/agua_cdmx.geojson", stringsAsFactors = FALSE) 
+#Delete the data
+dir_delete("raw-data")
+#Change Factors to dbl
+cols <- c("consumo_total", "consumo_total_mixto", "consumo_prom_dom", "consumo_total_dom", "consumo_prom", "consumo_total_no_dom", "consumo_prom_mixto", "consumo_prom_no_dom")
+agua_cdmx[cols] <- sapply(agua_cdmx[cols], as.numeric)
+#Clean empty rows
+agua_cdmx_clean <- agua_cdmx %>%
+filter(consumo_total != 0) 
+
+#Unnest the column list with coord and split in two columns
+agua_cdmx_latlng <- agua_cdmx_clean %>%
+  unnest(geo_point_2d) %>%
+  group_by(gid) %>%
+  mutate(col = seq_along(gid)) %>%
+  spread(key=col, value=geo_point_2d)
+
+
+#Change column names into lat and lng
+colnames(agua_cdmx_latlng)[colnames(agua_cdmx_latlng) == '1'] <- 'lat'
+colnames(agua_cdmx_latlng)[colnames(agua_cdmx_latlng) == '2'] <- 'lng'
+
+#Arrange into readable format
+agua_cdmx_latlng <- agua_cdmx_latlng[,c("anio","gid", "nomgeo", "alcaldia", "colonia", "bimestre", "consumo_total", "consumo_prom" ,"consumo_total_dom", "consumo_prom_dom", "consumo_total_no_dom", "consumo_prom_no_dom", "consumo_total_mixto", "consumo_prom_mixto", "indice_des", "geometry", "lat", "lng")]
+
+#Parse data
+agua_cdmx_latlng$bimestre <- as.factor(agua_cdmx_latlng$bimestre)
+agua_cdmx_latlng$indice_des <- as.factor(agua_cdmx_latlng$indice_des)
+
+agua_cdmx_latlng %>%
+  arrange(desc(consumo_total)) %>%
+  head(5000)
+
+saveRDS(agua_cdmx_latlng, file = "Test-old/agua_cdmx_latlng.rds")
+
+#Create a color palette
+pal <- colorNumeric(
+  palette = colorspace::heat_hcl,
+  domain = agua_cdmx_latlng$consumo_total)
+
+#Create basemap
+m <- leaflet() %>%
+setView(lng = -99.1269, lat = 19.4978, zoom = 11) %>%
+setMaxBounds(-99.34196, 19.1356, -98.95071, 19.5751)
+
+n <- m %>% addProviderTiles(providers$CartoDB.Positron)
+
+
+#Add data layer to leaflet basemap
+final_map <- n %>%
+  addCircleMarkers(lng = agua_cdmx_latlng$lng, lat = agua_cdmx_latlng$lat,
+                   label = agua_cdmx_latlng$consumo_total,
+                   weight = 0,
+                   labelOptions = labelOptions(noHide = T),
+                   fillColor = pal(agua_cdmx_latlng$consumo_total),
+    radius = agua_cdmx_latlng$consumo_total*.001)
+
+#Save it to RDS
+saveRDS(final_map, file = "superzip.rds")
+
+
 ```
 
